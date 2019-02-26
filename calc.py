@@ -1,7 +1,6 @@
 import math
 import sympy
 from sympy import sqrt, Mul, Add, Pow
-from typing import Dict
 
 
 class Symbol:
@@ -20,7 +19,8 @@ class Symbol:
 
     @staticmethod
     def is_number(n):
-        return type(n) == int or type(n) == float
+        t = type(n)
+        return t == int or t == float
 
     @staticmethod
     def sqrt(v):
@@ -114,16 +114,44 @@ class Symbol:
     def __str__(self):
         return str(self.sym) + "|" + str(self.err_sym)
 
-    def eval(self):
-        symbols = list(self.val_set.items())
-        symbols_no_eval = [(k, str(v)) for (k, v) in self.val_set.items()]
+    def simp(self):
         self.sym = sympy.simplify(self.sym)
         self.err_sym = sympy.simplify(self.err_sym)
+
+    def eval(self):
+        symbols = list(self.val_set.items())
         val = self.sym.subs(symbols)
         err = self.err_sym.subs(symbols)
+        return val, err
+
+    def eval_sym(self):
+        # convert number to string to disable evaluation
+        symbols_no_eval = [(k, str(v)) for (k, v) in self.val_set.items()]
         val_no_eval = self.sym.subs(symbols_no_eval)
         err_no_eval = self.err_sym.subs(symbols_no_eval)
-        return val, err, val_no_eval, err_no_eval
+        return val_no_eval, err_no_eval
+
+    def expr(self):
+        return self.sym, self.err_sym
+
+    def display(self, name=""):
+        from IPython.display import display, Math
+
+        val, err = self.eval()
+        val_sym, err_sym = self.eval_sym()
+
+        content = """
+        \\begin{{align*}}
+            \\textbf{{Numeric: }}& \\ {} \\pm {} \\\\
+            \\textbf{{Symbolic: }}& \\\\
+            \\text{{Value: }} &= {} \\\\
+                              &= {} \\\\
+            \\text{{Error: }} &= {} \\\\
+                              &= {} \\\\
+        \\end{{align*}}
+            """.format(val, err, sympy.latex(self.sym), sympy.latex(val_sym), sympy.latex(self.err_sym),  sympy.latex(err_sym))
+
+        display(Math(content))
 
 
 if __name__ == "__main__":
@@ -134,7 +162,3 @@ if __name__ == "__main__":
     d = Symbol('d', val=123, err=1)
 
     f = a + b * c - d
-
-    print(f)
-    print(f.val_set)
-    print(f.eval())
