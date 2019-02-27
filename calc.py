@@ -69,6 +69,17 @@ class Symbol:
                               self.sym, self.err_sym, other.sym, other.err_sym),
                           val_set=val_set)
 
+    def __radd__(self, other):
+        val_set = self.val_set.copy()
+
+        if self.is_number(other):
+            return Symbol(sym=self.sym + other,
+                          err_sym=self.err_sym,
+                          val_set=val_set)
+
+        else:
+            raise NotImplementedError()
+
     def __mul__(self, other):
         val_set = self.val_set.copy()
 
@@ -83,6 +94,16 @@ class Symbol:
                               self.sym, self.err_sym, other.sym, other.err_sym),
                           val_set=val_set)
 
+    def __rmul__(self, other):
+        val_set = self.val_set.copy()
+
+        if self.is_number(other):
+            return Symbol(sym=self.sym * other,
+                          err_sym=self.err_sym * other,
+                          val_set=val_set)
+        else:
+            raise NotImplementedError()
+
     def __pow__(self, other):
         val_set = self.val_set.copy()
 
@@ -95,12 +116,13 @@ class Symbol:
                                   self.sym, self.err_sym, other),
                               val_set=val_set)
         else:
-            print('Warning: raise to a power that has uncertainty')
-            val_set.update(other.val_set)
-            return Symbol(sym=self.sym ** other.sym,
-                          err_sym=self.err_pow(
-                              self.sym, self.err_sym, other.sym),
-                          val_set=val_set)
+            raise NotImplementedError()
+            # print('Warning: raise to a power that has uncertainty')
+            # val_set.update(other.val_set)
+            # return Symbol(sym=self.sym ** other.sym,
+            #               err_sym=self.err_pow(
+            #                   self.sym, self.err_sym, other.sym),
+            #               val_set=val_set)
 
     def __neg__(self):
         return Symbol(sym=-self.sym, err_sym=self.err_sym, val_set=self.val_set.copy())
@@ -108,11 +130,20 @@ class Symbol:
     def __truediv__(self, other):
         return self * (other ** -1)
 
+    def __rtruediv__(self, other):
+        # x / Symbol = x * Symbol^-1
+        return other * (self ** -1)
+
     def __sub__(self, other):
         return self + (-other)
 
+    def __rsub__(self, other):
+        # x - Symbol = (-Symbol) + x
+        return (-self) + other
+
     def __str__(self):
-        return str(self.sym) + "|" + str(self.err_sym)
+        val, err = self.eval()
+        return "{} | {}\n{} | {}".format(val, err, str(self.sym), str(self.err_sym))
 
     def simp(self):
         self.sym = sympy.simplify(self.sym)
@@ -142,14 +173,15 @@ class Symbol:
 
         content = """
         \\begin{{align*}}
-            \\textbf{{Numeric: }}& \\ {} \\pm {} \\\\
+            \\textbf{{Numeric: }} \\\\
+                              {0} &= \\ {1} \\pm {2} \\\\
             \\textbf{{Symbolic: }}& \\\\
-            \\text{{Value: }} &= {} \\\\
-                              &= {} \\\\
-            \\text{{Error: }} &= {} \\\\
-                              &= {} \\\\
+            \\text{{Value: }} {0} &= {3} \\\\
+                                  &= {4} \\\\
+            \\text{{Error: }} \\sigma_{{{0}}}&= {5} \\\\
+                                  &= {6} \\\\
         \\end{{align*}}
-            """.format(val, err, sympy.latex(self.sym), sympy.latex(val_sym), sympy.latex(self.err_sym),  sympy.latex(err_sym))
+            """.format(name, val, err, sympy.latex(self.sym), sympy.latex(val_sym), sympy.latex(self.err_sym),  sympy.latex(err_sym))
 
         display(Math(content))
 
@@ -161,4 +193,5 @@ if __name__ == "__main__":
     c = Symbol('c', val=150, err=3)
     d = Symbol('d', val=123, err=1)
 
-    f = a + b * c - d
+    f = 1 + a + 2 * b * c - d / 2
+    print(f)
