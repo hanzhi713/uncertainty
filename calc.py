@@ -23,6 +23,20 @@ class Symbol:
         return t == int or t == float
 
     @staticmethod
+    def from_mean(name, *args):
+        mean, err = Symbol.std_err_of_mean(*args)
+        return Symbol(name, val=mean, err=err)
+
+    @staticmethod
+    def std_err_of_mean(*args):
+        n = len(args)
+        mean = sum(args) / len(args)
+        temp = 0
+        for arg in args:
+            temp += (arg - mean) ** 2
+        return mean, math.sqrt(temp / (n - 1)) / math.sqrt(n)
+
+    @staticmethod
     def sqrt(v):
         return Symbol(sym=sqrt(v.sym),
                       err_sym=sympy.Rational(1, 2) * v.err_sym,
