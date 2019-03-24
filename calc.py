@@ -1,6 +1,6 @@
 import math
 import sympy
-from sympy import sqrt, Mul, Add, Pow
+from sympy import sqrt, Mul, Add, Pow, simplify
 
 
 class Symbol:
@@ -20,7 +20,16 @@ class Symbol:
     @staticmethod
     def is_number(n):
         t = type(n)
-        return t == int or t == float
+        if t == int or t == float:
+            return True
+        elif isinstance(n, Symbol):
+            return False
+        else:
+            # sympy object in this case
+            try:
+                return n.is_number
+            except:
+                return False
 
     @staticmethod
     def from_mean(name, *args):
@@ -30,6 +39,7 @@ class Symbol:
     @staticmethod
     def std_err_of_mean(*args):
         n = len(args)
+        # args = [sympy.Number(arg) for arg in args]
         mean = sum(args) / len(args)
         temp = 0
         for arg in args:
@@ -92,7 +102,8 @@ class Symbol:
                           val_set=val_set)
 
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(
+                str(other) + " is not a supported oprand")
 
     def __mul__(self, other):
         val_set = self.val_set.copy()
@@ -116,7 +127,8 @@ class Symbol:
                           err_sym=self.err_sym * other,
                           val_set=val_set)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(
+                str(other) + " is not a supported oprand")
 
     def __pow__(self, other):
         val_set = self.val_set.copy()
@@ -130,7 +142,8 @@ class Symbol:
                                   self.sym, self.err_sym, other),
                               val_set=val_set)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(
+                str(other) + " is not a supported oprand")
             # print('Warning: raise to a power that has uncertainty')
             # val_set.update(other.val_set)
             # return Symbol(sym=self.sym ** other.sym,
@@ -165,8 +178,8 @@ class Symbol:
 
     def eval(self):
         symbols = list(self.val_set.items())
-        val = self.sym.subs(symbols)
-        err = self.err_sym.subs(symbols)
+        val = sympy.N(self.sym.subs(symbols))
+        err = sympy.N(self.err_sym.subs(symbols))
         return val, err
 
     def eval_sym(self):
@@ -180,12 +193,15 @@ class Symbol:
         return self.sym, self.err_sym
 
     def display(self, name=""):
-        from IPython.display import display, Math
+        from IPython.display import display, Math, Markdown
 
         val, err = self.eval()
         val_sym, err_sym = self.eval_sym()
+        options = {
+            'long_frac_ratio': 10
+        }
 
-        content = """
+        content = """$$
         \\begin{{align*}}
             \\textbf{{Numeric: }} \\\\
                               {0} &= \\ {1} \\pm {2} \\\\
@@ -195,7 +211,7 @@ class Symbol:
             \\text{{Error: }} \\sigma_{{{0}}}&= {5} \\\\
                                   &= {6} \\\\
         \\end{{align*}}
-            """.format(name, val, err, sympy.latex(self.sym), sympy.latex(val_sym), sympy.latex(self.err_sym),  sympy.latex(err_sym))
+            $$""".format(name, val, err, sympy.latex(self.sym), sympy.latex(val_sym), sympy.latex(self.err_sym),  sympy.latex(err_sym))
 
         display(Math(content))
 
