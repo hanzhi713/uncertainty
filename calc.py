@@ -49,7 +49,7 @@ class Symbol:
     @staticmethod
     def sqrt(v):
         return Symbol(sym=sqrt(v.sym),
-                      err_sym=sympy.Rational(1, 2) * v.err_sym,
+                      err_sym=sympy.Rational(1, 2) * v.err_sym * v.sym,
                       val_set=v.val_set.copy())
 
     def __init__(self, sym="", err_sym="", val=None, err=None, val_set=dict()):
